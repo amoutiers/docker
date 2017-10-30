@@ -15,7 +15,7 @@ FROM php:${PHP_VERSION}-apache
 RUN a2enmod rewrite
 # Change Apache DocumentRoot to suit drupal-composer/drupal-projet
 # https://github.com/drupal-composer/drupal-project
-ENV APACHE_DOCUMENT_ROOT /var/www/www/web
+ENV APACHE_DOCUMENT_ROOT /var/www/html/web
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
   /etc/apache2/sites-available/*.conf \
   && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' \
@@ -58,4 +58,4 @@ RUN apt-get update \
 # Install composer from lastest image
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-WORKDIR /var/www/drupal
+WORKDIR /var/www/html

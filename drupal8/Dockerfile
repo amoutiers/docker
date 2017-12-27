@@ -1,5 +1,6 @@
-ARG  COMPOSER_VERSION=latest
-ARG  PHP_VERSION
+ARG COMPOSER_VERSION=latest
+ARG PHP_VERSION
+
 
 ###
 # Build composer
@@ -55,7 +56,12 @@ RUN { \
 RUN apt-get update \
     && apt-get install -y mariadb-client
 
+# Installation ssmtp
+RUN apt-get install -y ssmtp mailutils
+
 # Install composer from lastest image
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+RUN echo "export PATH=$PATH:$HOME/.composer/vendor/bin" >> /root/.bashrc
+RUN apt-get update && apt-get install -y --no-install-recommends git
 
 WORKDIR /var/www/html

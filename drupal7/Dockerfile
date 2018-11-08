@@ -7,6 +7,7 @@ ARG PHP_VERSION
 ###
 FROM composer:${COMPOSER_VERSION} as build_composer
 
+
 ###
 # Build drupal container
 ###
@@ -44,10 +45,12 @@ RUN apt-get install -y ssmtp mailutils
 # Install composer from lastest image
 COPY --from=build_composer /usr/bin/composer /usr/bin/composer
 RUN echo "export PATH=$PATH:$HOME/.composer/vendor/bin" >> /root/.bashrc
-RUN apt-get update && apt-get install -y --no-install-recommends git
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends git
 
 # Install drush
-ARG DRUSH_VERSION=8
+ARG DRUSH_VERSION=8.x
 RUN composer global require "drush/drush:${DRUSH_VERSION}" --prefer-dist
+
 
 WORKDIR /var/www/html

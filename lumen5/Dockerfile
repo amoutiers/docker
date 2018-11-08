@@ -1,10 +1,12 @@
 ARG  COMPOSER_VERSION=latest
 ARG  PHP_VERSION
 
+
 ###
 # Build composer
 ###
 FROM composer:${COMPOSER_VERSION} as build_composer
+
 
 ###
 # Build lumen container
@@ -26,5 +28,6 @@ RUN docker-php-ext-install \
 
 # Install composer from composer build
 COPY --from=build_composer /usr/bin/composer /usr/bin/composer
+
 
 WORKDIR /var/www/html

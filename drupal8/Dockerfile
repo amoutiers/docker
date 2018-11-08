@@ -7,6 +7,7 @@ ARG PHP_VERSION
 ###
 FROM composer:${COMPOSER_VERSION} as build_composer
 
+
 ###
 # Build drupal container
 ###
@@ -54,14 +55,17 @@ RUN { \
 
 # Install MariaDB client
 RUN apt-get update \
-    && apt-get install -y mariadb-client
+  && apt-get install -y mariadb-client
 
 # Installation ssmtp
-RUN apt-get install -y ssmtp mailutils
+RUN apt-get update \
+  && apt-get install -y ssmtp mailutils
 
 # Install composer from lastest image
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN echo "export PATH=$PATH:$HOME/.composer/vendor/bin" >> /root/.bashrc
-RUN apt-get update && apt-get install -y --no-install-recommends git
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends git
+
 
 WORKDIR /var/www/html

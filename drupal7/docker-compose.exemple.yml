@@ -2,9 +2,9 @@ version: '3.3'
 
 services:
 
-  backdrop:
+  drupal:
     build:
-      context: ../path/to/docker/backdrop
+      context: ../path/to/docker/drupal
       args:
         - COMPOSER_VERSION=latest
         - PHP_VERSION=7.2
@@ -21,7 +21,7 @@ services:
   mariadb:
     image: mariadb:10.3
     environment:
-      - MYSQL_DATABASE=backdrop
+      - MYSQL_DATABASE=drupal
       - MYSQL_ALLOW_EMPTY_PASSWORD=yes
     ports:
       - 3306:3306

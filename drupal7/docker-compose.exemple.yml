@@ -4,11 +4,14 @@ services:
 
   drupal:
     build:
-      context: ../path/to/docker/drupal
+      context: ../docker/drupal7
       args:
         - COMPOSER_VERSION=latest
-        - PHP_VERSION=7.2
+        - PHP_VERSION=7.1
         - DRUSH_VERSION=8.x
+        - BUILD_DEV=1
+    depends_on:
+      - mariadb
     links:
       - maildev:mail
       - mariadb

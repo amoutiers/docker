@@ -1,5 +1,5 @@
 ARG COMPOSER_VERSION=latest
-ARG PHP_VERSION=7.1
+ARG PHP_VERSION=7.2
 
 
 ###
@@ -11,7 +11,7 @@ FROM composer:${COMPOSER_VERSION} as build_composer
 ###
 # Build backdrop container
 ###
-FROM php:${PHP_VERSION}-apache
+FROM php:${PHP_VERSION}-apache-stretch
 
 # Setup apache
 RUN a2enmod rewrite
@@ -58,21 +58,41 @@ RUN set -ex; \
 # set recommended PHP.ini settings
 # see https://secure.php.net/manual/en/opcache.installation.php
 RUN { \
-    echo 'opcache.memory_consumption=128'; \
-    echo 'opcache.interned_strings_buffer=8'; \
-    echo 'opcache.max_accelerated_files=4000'; \
-    echo 'opcache.revalidate_freq=60'; \
-    echo 'opcache.fast_shutdown=1'; \
-    echo 'opcache.enable_cli=1'; \
+  echo 'opcache.memory_consumption=128'; \
+  echo 'opcache.interned_strings_buffer=8'; \
+  echo 'opcache.max_accelerated_files=4000'; \
+  echo 'opcache.revalidate_freq=60'; \
+  echo 'opcache.fast_shutdown=1'; \
+  echo 'opcache.enable_cli=1'; \
+  echo 'opcache.enable=1'; \
 } > /usr/local/etc/php/conf.d/opcache-recommended.ini
+
+ARG BUILD_DEV=0
+RUN \
+  if [ "x$BUILD_DEV" = "x1" ]; \
+    then \
+    ln -s /usr/local/etc/php/php.ini-development /usr/local/etc/php/php.ini; \
+    echo 'opcache.enable_cli=0' >> /usr/local/etc/php/conf.d/opcache-recommended.ini; \
+    echo 'opcache.enable=0' >> /usr/local/etc/php/conf.d/opcache-recommended.ini; \
+    curl -o /tmp/xhprof.tgz https://codeload.github.com/tideways/php-xhprof-extension/tar.gz/v4.1.6 \
+      && tar xzf /tmp/xhprof.tgz -C /tmp \
+      && cd /tmp/php-xhprof-extension-4.1.6 \
+      && phpize \
+      && ./configure \
+      && make \
+      && make install \
+      && echo 'extension=tideways_xhprof.so' > /usr/local/etc/php/conf.d/xhprof.ini; \
+  else \
+    ln -s /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini; \
+  fi
 
 # Install MariaDB client
 RUN apt-get update \
-  && apt-get install -y mariadb-client
+  && apt-get install -y --no-install-recommends mariadb-client
 
-# Installation ssmtp
+# Configure mail
 RUN apt-get update \
-  && apt-get install -y ssmtp mailutils
+   && apt-get install -y --no-install-recommends ssmtp mailutils
 
 # Install composer from lastest image
 COPY --from=build_composer /usr/bin/composer /usr/bin/composer

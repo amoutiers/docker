@@ -9,6 +9,9 @@ services:
         - COMPOSER_VERSION=latest
         - PHP_VERSION=7.2
         - DRUSH_VERSION=8.x
+        - BUILD_DEV=1
+    depends_on:
+      - mariadb
     links:
       - maildev:mail
       - mariadb

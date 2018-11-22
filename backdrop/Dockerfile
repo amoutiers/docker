@@ -69,8 +69,7 @@ RUN { \
 
 ARG BUILD_DEV=0
 RUN \
-  if [ "x$BUILD_DEV" = "x1" ]; \
-    then \
+  if [ "x$BUILD_DEV" = "x1" ]; then \
     ln -s /usr/local/etc/php/php.ini-development /usr/local/etc/php/php.ini; \
     echo 'opcache.enable_cli=0' >> /usr/local/etc/php/conf.d/opcache-recommended.ini; \
     echo 'opcache.enable=0' >> /usr/local/etc/php/conf.d/opcache-recommended.ini; \
@@ -81,7 +80,9 @@ RUN \
       && ./configure \
       && make \
       && make install \
-      && echo 'extension=tideways_xhprof.so' > /usr/local/etc/php/conf.d/xhprof.ini; \
+      && echo 'extension=tideways.so' > /usr/local/etc/php/conf.d/xhprof.ini; \
+    pecl install xdebug-2.6.0 \
+      && docker-php-ext-enable xdebug; \
   else \
     ln -s /usr/local/etc/php/php.ini-production /usr/local/etc/php/php.ini; \
   fi
@@ -109,5 +110,7 @@ RUN git clone \
   https://github.com/backdrop-contrib/drush.git \
   /root/.composer/vendor/drush/drush/commands/backdrop
 
+
+EXPOSE 80 9000
 
 WORKDIR /var/www/html

@@ -104,6 +104,8 @@ RUN apt-get update \
 # Install drush
 ARG DRUSH_VERSION=8.x
 RUN composer global require "drush/drush:${DRUSH_VERSION}" --prefer-dist
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends unzip wget
 
 # Install backdrop command for drush
 RUN git clone \

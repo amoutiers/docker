@@ -11,7 +11,7 @@ FROM composer:${COMPOSER_VERSION} as build_composer
 ###
 # Build drupal container
 ###
-FROM php:${PHP_VERSION}-apache
+FROM php:${PHP_VERSION}-apache-stretch
 
 # Setup apache
 RUN a2enmod rewrite
@@ -24,23 +24,43 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
   /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
 # install the PHP extensions we need
-RUN set -ex \
-  && buildDeps=' \
-    libjpeg62-turbo-dev \
-    libpng12-dev \
+RUN set -ex; \
+  \
+  if command -v a2enmod; then \
+    a2enmod rewrite; \
+  fi; \
+  \
+  savedAptMark="$(apt-mark showmanual)"; \
+  \
+  apt-get update; \
+  apt-get install -y --no-install-recommends \
+    libjpeg-dev \
+    libpng-dev \
     libpq-dev \
-  ' \
-  && apt-get update && apt-get install -y --no-install-recommends $buildDeps && rm -rf /var/lib/apt/lists/* \
-  && docker-php-ext-configure gd \
-    --with-jpeg-dir=/usr \
-    --with-png-dir=/usr \
-  && docker-php-ext-install -j "$(nproc)" gd mbstring opcache pdo pdo_mysql pdo_pgsql zip \
-# PHP Warning:  PHP Startup: Unable to load dynamic library '/usr/local/lib/php/extensions/no-debug-non-zts-20151012/gd.so' - libjpeg.so.62: cannot open shared object file: No such file or directory in Unknown on line 0
-# PHP Warning:  PHP Startup: Unable to load dynamic library '/usr/local/lib/php/extensions/no-debug-non-zts-20151012/pdo_pgsql.so' - libpq.so.5: cannot open shared object file: No such file or directory in Unknown on line 0
-  && apt-mark manual \
-    libjpeg62-turbo \
-    libpq5 \
-  && apt-get purge -y --auto-remove $buildDeps
+  ; \
+  \
+  docker-php-ext-configure gd --with-png-dir=/usr --with-jpeg-dir=/usr; \
+  docker-php-ext-install -j "$(nproc)" \
+    gd \
+    opcache \
+    pdo_mysql \
+    pdo_pgsql \
+    zip \
+  ; \
+  \
+# reset apt-mark's "manual" list so that "purge --auto-remove" will remove all build dependencies
+  apt-mark auto '.*' > /dev/null; \
+  apt-mark manual $savedAptMark; \
+  ldd "$(php -r 'echo ini_get("extension_dir");')"/*.so \
+    | awk '/=>/ { print $3 }' \
+    | sort -u \
+    | xargs -r dpkg-query -S \
+    | cut -d: -f1 \
+    | sort -u \
+    | xargs -rt apt-mark manual; \
+  \
+  apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
+  rm -rf /var/lib/apt/lists/*
 
 # set recommended PHP.ini settings
 # see https://secure.php.net/manual/en/opcache.installation.php
@@ -55,17 +75,25 @@ RUN { \
 
 # Install MariaDB client
 RUN apt-get update \
-  && apt-get install -y mariadb-client
+  && apt-get install -y --no-install-recommends mariadb-client
 
 # Installation ssmtp
 RUN apt-get update \
-  && apt-get install -y ssmtp mailutils
+  && apt-get install -y --no-install-recommends ssmtp mailutils
 
 # Install composer from lastest image
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 RUN echo "export PATH=$PATH:$HOME/.composer/vendor/bin" >> /root/.bashrc
 RUN apt-get update \
   && apt-get install -y --no-install-recommends git
+
+# Install zip
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends unzip
+
+# Symlink to drupal tools
+RUN ln -s /var/www/html/vendor/bin/drush /usr/local/bin/drush
+RUN ln -s /var/www/html/vendor/drupal/console/bin/drupal /usr/local/bin/drupal
 
 
 WORKDIR /var/www/html
